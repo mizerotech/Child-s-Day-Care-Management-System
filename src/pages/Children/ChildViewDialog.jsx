@@ -1,42 +1,51 @@
 import React from 'react'
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Button, Avatar, Box, Typography, Chip, Divider, Grid
+  Button, Avatar, Box, Typography, Chip, Divider
 } from '@mui/material'
 import '../../styles/global.scss'
 
+const fields = [
+  { label: 'Age',      key: 'age',      fmt: v => `${v} years old` },
+  { label: 'Guardian', key: 'guardian' },
+  { label: 'Phone',    key: 'phone' },
+  { label: 'Email',    key: 'email' },
+  { label: 'Allergies',key: 'allergies', fmt: v => v || 'None' },
+]
+
 export default function ChildViewDialog({ open, child, onClose }) {
   if (!child) return null
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth className="child-view-dialog">
+    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Child Profile</DialogTitle>
       <DialogContent dividers>
-        <Box className="profile-header">
-          <Avatar src={child.image || undefined} className="profile-avatar" color="primary">
+        {/* Profile header */}
+        <Box className="child-view-profile">
+          <Avatar
+            src={child.image || undefined}
+            className="view-avatar"
+            sx={{ bgcolor: 'primary.main' }}
+          >
             {child.name[0]}
           </Avatar>
-          <Typography variant="h6" fontWeight={700}>{child.name}</Typography>
-          <Chip label={child.group} size="small" color="primary" className="profile-group" />
+          <Typography className="view-name" color="text.primary">{child.name}</Typography>
+          <Chip label={child.group} size="small" color="primary" className="view-group" />
         </Box>
-        <Divider className="profile-divider" />
-        <Grid container spacing={1.5} className="profile-info">
-          {[
-            ['Age', `${child.age} years`],
-            ['Guardian', child.guardian],
-            ['Phone', child.phone],
-            ['Email', child.email],
-            ['Allergies', child.allergies || 'None'],
-          ].map(([label, value]) => (
-            <Grid item xs={12} key={label}>
-              <Box className="info-row">
-                <Typography variant="body2" color="text.secondary">{label}</Typography>
-                <Typography variant="body2" fontWeight={500}>{value}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Info rows */}
+        {fields.map(({ label, key, fmt }) => (
+          <Box key={key} className="view-info-row">
+            <Typography className="info-label" color="text.secondary">{label}</Typography>
+            <Typography className="info-value" color="text.primary">
+              {fmt ? fmt(child[key]) : child[key] || '—'}
+            </Typography>
+          </Box>
+        ))}
       </DialogContent>
-      <DialogActions className="confirm-dialog-actions">
+      <DialogActions>
         <Button onClick={onClose} variant="contained" fullWidth>Close</Button>
       </DialogActions>
     </Dialog>

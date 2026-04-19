@@ -1,16 +1,19 @@
-.page-container {
-  padding: 24px;
+@import './variables';
 
-  @media (max-width: 600px) {
-    padding: 16px;
+.page-container {
+  padding: $space-6;
+  animation: fadeInUp 0.25s ease forwards;
+
+  @media (max-width: $breakpoint-sm) {
+    padding: $space-4;
   }
 }
 
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: $space-6;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: $space-3;
 }

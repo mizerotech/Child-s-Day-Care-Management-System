@@ -1,65 +1,65 @@
 import React, { useState } from 'react'
 import {
   Box, Typography, Button, Card, CardContent,
-  Grid, Chip, Alert, Snackbar
+  Chip, Alert, Snackbar, Divider
 } from '@mui/material'
 import { DataGrid } from '@mui/x-data-grid'
 import LoginIcon from '@mui/icons-material/Login'
 import LogoutIcon from '@mui/icons-material/Logout'
+import PeopleIcon from '@mui/icons-material/People'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import { childrenData, initialAttendanceLogs } from '../../data/mockData'
-import '../../styles/pages.scss'
+import '../../styles/global.scss'
 
-function getToday() {
-  return new Date().toISOString().split('T')[0]
-}
-function getTime() {
-  return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-}
+const getToday = () => new Date().toISOString().split('T')[0]
+const getTime  = () => new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
 
 export default function Attendance() {
-  const [logs, setLogs] = useState(initialAttendanceLogs)
+  const [logs, setLogs]   = useState(initialAttendanceLogs)
   const [snack, setSnack] = useState({ open: false, message: '', severity: 'success' })
 
-  const today = getToday()
-
+  const today     = getToday()
   const todayLogs = logs.filter(l => l.date === today)
+  const getLog    = (childId) => todayLogs.find(l => l.childId === childId)
 
-  const getChildLog = (childId) => todayLogs.find(l => l.childId === childId)
+  const presentCount  = todayLogs.filter(l => l.checkIn).length
+  const checkedOut    = todayLogs.filter(l => l.checkOut).length
+
+  const notify = (message, severity) => setSnack({ open: true, message, severity })
 
   const handleCheckIn = (child) => {
-    const existing = getChildLog(child.id)
-    if (existing) {
-      setSnack({ open: true, message: `${child.name} is already checked in today`, severity: 'warning' })
+    const log = getLog(child.id)
+    if (log) {
+      notify(`${child.name} is already checked in today`, 'warning')
       return
     }
-    const newLog = {
+    const time = getTime()
+    setLogs(p => [...p, {
       id: Date.now(),
       childId: child.id,
       childName: child.name,
       date: today,
-      checkIn: getTime(),
+      checkIn: time,
       checkOut: null,
       status: 'Checked In',
-    }
-    setLogs(prev => [...prev, newLog])
-    setSnack({ open: true, message: `${child.name} checked in at ${newLog.checkIn}`, severity: 'success' })
+    }])
+    notify(`${child.name} checked in at ${time}`, 'success')
   }
 
   const handleCheckOut = (child) => {
-    const existing = getChildLog(child.id)
-    if (!existing) {
-      setSnack({ open: true, message: `${child.name} has not checked in yet`, severity: 'error' })
+    const log = getLog(child.id)
+    if (!log) {
+      notify(`${child.name} hasn't checked in yet`, 'error')
       return
     }
-    if (existing.checkOut) {
-      setSnack({ open: true, message: `${child.name} already checked out`, severity: 'warning' })
+    if (log.checkOut) {
+      notify(`${child.name} already checked out`, 'warning')
       return
     }
     const time = getTime()
-    setLogs(prev => prev.map(l =>
-      l.id === existing.id ? { ...l, checkOut: time, status: 'Present' } : l
-    ))
-    setSnack({ open: true, message: `${child.name} checked out at ${time}`, severity: 'info' })
+    setLogs(p => p.map(l => l.id === log.id ? { ...l, checkOut: time, status: 'Present' } : l))
+    notify(`${child.name} checked out at ${time}`, 'info')
   }
 
   const logColumns = [
@@ -69,78 +69,123 @@ export default function Attendance() {
     { field: 'checkOut', headerName: 'Check Out', width: 110, renderCell: ({ value }) => value || '—' },
     {
       field: 'status', headerName: 'Status', width: 130,
-      renderCell: ({ value }) => {
-        const color = value === 'Present' ? 'success' : value === 'Checked In' ? 'primary' : 'error'
-        return <Chip label={value} size="small" color={color} />
-      },
+      renderCell: ({ value }) => (
+        <Chip
+          label={value}
+          size="small"
+          color={value === 'Present' ? 'success' : value === 'Checked In' ? 'primary' : 'error'}
+        />
+      ),
     },
   ]
 
   return (
     <Box className="page-container">
-      <Typography variant="h5" fontWeight={700} mb={3}>Attendance — {today}</Typography>
+      <Box className="page-header">
+        <Box>
+          <Typography variant="h5" fontWeight={700} color="text.primary">Attendance</Typography>
+          <Typography variant="body2" color="text.secondary">{today}</Typography>
+        </Box>
+      </Box>
 
-      {/* Quick Check-in/out panel */}
+      <Box className="attendance-stats">
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+            <PeopleIcon sx={{ color: 'primary.main', mb: 0.5 }} />
+            <Typography variant="h4" fontWeight={800} color="text.primary">{childrenData.length}</Typography>
+            <Typography variant="body2" color="text.secondary">Total Children</Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+            <CheckCircleIcon sx={{ color: 'success.main', mb: 0.5 }} />
+            <Typography variant="h4" fontWeight={800} color="success.main">{presentCount}</Typography>
+            <Typography variant="body2" color="text.secondary">Checked In Today</Typography>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent sx={{ textAlign: 'center', py: 2.5 }}>
+            <AccessTimeIcon sx={{ color: 'warning.main', mb: 0.5 }} />
+            <Typography variant="h4" fontWeight={800} color="warning.main">{checkedOut}</Typography>
+            <Typography variant="body2" color="text.secondary">Checked Out</Typography>
+          </CardContent>
+        </Card>
+      </Box>
+
       <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="subtitle1" fontWeight={600} mb={2}>Quick Check-In / Check-Out</Typography>
-          <Grid container spacing={1.5}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} color="text.primary" gutterBottom>
+            Quick Check-In / Check-Out
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Click In/Out buttons to record attendance for each child.
+          </Typography>
+          <Box className="checkin-grid">
             {childrenData.map(child => {
-              const log = getChildLog(child.id)
+              const log = getLog(child.id)
               const checkedIn = !!log?.checkIn
-              const checkedOut = !!log?.checkOut
+              const doneOut = !!log?.checkOut
+              const statusCls = doneOut ? 'status-out' : checkedIn ? 'status-in' : 'status-absent'
+
               return (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={child.id}>
-                  <Box sx={{
-                    p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 2,
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1
-                  }}>
-                    <Box>
-                      <Typography variant="body2" fontWeight={600} noWrap>{child.name}</Typography>
-                      <Typography variant="caption" color="text.secondary">{child.group}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', gap: 0.5 }}>
-                      <Button
-                        size="small" variant={checkedIn ? 'outlined' : 'contained'}
-                        color="success" startIcon={<LoginIcon />}
-                        onClick={() => handleCheckIn(child)}
-                        disabled={checkedIn}
-                        sx={{ minWidth: 0, px: 1, fontSize: 11 }}
-                      >
-                        In
-                      </Button>
-                      <Button
-                        size="small" variant={checkedOut ? 'outlined' : 'contained'}
-                        color="warning" startIcon={<LogoutIcon />}
-                        onClick={() => handleCheckOut(child)}
-                        disabled={!checkedIn || checkedOut}
-                        sx={{ minWidth: 0, px: 1, fontSize: 11 }}
-                      >
-                        Out
-                      </Button>
-                    </Box>
+                <Box key={child.id} className={`checkin-card ${statusCls}`}>
+                  <Box className="checkin-info">
+                    <Typography className="checkin-name" color="text.primary">{child.name}</Typography>
+                    <Typography className="checkin-group" color="text.secondary">{child.group}</Typography>
+                    {log?.checkIn && (
+                      <Typography className="checkin-time">
+                        In: {log.checkIn}{log.checkOut ? ` · Out: ${log.checkOut}` : ''}
+                      </Typography>
+                    )}
                   </Box>
-                </Grid>
+                  <Box className="checkin-actions">
+                    <Button
+                      size="small" variant={checkedIn ? 'outlined' : 'contained'}
+                      color="success" onClick={() => handleCheckIn(child)}
+                      disabled={checkedIn}
+                      sx={{ minWidth: 44, px: 1, fontSize: '0.75rem' }}
+                    >
+                      <LoginIcon sx={{ fontSize: 14 }} />
+                    </Button>
+                    <Button
+                      size="small" variant={doneOut ? 'outlined' : 'contained'}
+                      color="warning" onClick={() => handleCheckOut(child)}
+                      disabled={!checkedIn || doneOut}
+                      sx={{ minWidth: 44, px: 1, fontSize: '0.75rem' }}
+                    >
+                      <LogoutIcon sx={{ fontSize: 14 }} />
+                    </Button>
+                  </Box>
+                </Box>
               )
             })}
-          </Grid>
+          </Box>
         </CardContent>
       </Card>
 
-      {/* Logs */}
-      <Typography variant="subtitle1" fontWeight={600} mb={1.5}>Attendance Logs</Typography>
-      <Box sx={{ height: 400 }}>
+      <Typography variant="subtitle1" fontWeight={700} color="text.primary" gutterBottom>
+        Attendance Logs
+      </Typography>
+      <Box className="grid-wrapper h-420" sx={{ bgcolor: 'background.paper' }}>
         <DataGrid
           rows={logs} columns={logColumns}
           pageSizeOptions={[10, 25]}
           initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
           disableRowSelectionOnClick
-          sx={{ border: 'none', bgcolor: 'background.paper', borderRadius: 3 }}
         />
       </Box>
 
-      <Snackbar open={snack.open} autoHideDuration={3000} onClose={() => setSnack(s => ({ ...s, open: false }))} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert severity={snack.severity} onClose={() => setSnack(s => ({ ...s, open: false }))} sx={{ width: '100%' }}>
+      <Snackbar
+        open={snack.open}
+        autoHideDuration={3000}
+        onClose={() => setSnack(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snack.severity}
+          onClose={() => setSnack(s => ({ ...s, open: false }))}
+          sx={{ borderRadius: 2, fontWeight: 500 }}
+        >
           {snack.message}
         </Alert>
       </Snackbar>

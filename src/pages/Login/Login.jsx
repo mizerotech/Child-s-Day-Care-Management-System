@@ -1,129 +1,140 @@
 import React, { useState } from 'react'
-import { useNavigate, Link as RouterLink } from 'react-router-dom'
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom'
 import {
   Box, Container, Card, CardContent, Typography, TextField,
-  Button, Link, Alert, InputAdornment, IconButton, Avatar
+  Button, Link, Alert, InputAdornment, IconButton, Divider
 } from '@mui/material'
 import ChildCareIcon from '@mui/icons-material/ChildCare'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
+import EmailIcon from '@mui/icons-material/Email'
+import LockIcon from '@mui/icons-material/Lock'
 import { useAuth } from '../../context/AuthContext'
 import '../../styles/global.scss'
 
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, isAuthenticated } = useAuth()
+
   const [form, setForm] = useState({ email: '', password: '' })
-  const [errors, setErrors] = useState({})
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState('')
+  const [touched, setTouched] = useState({ email: false, password: false })
+  const [showPwd, setShowPwd] = useState(false)
+  const [serverErr, setServerErr] = useState('')
+  const [loading, setLoading] = useState(false)
 
   React.useEffect(() => {
     if (isAuthenticated) navigate('/dashboard')
   }, [isAuthenticated, navigate])
 
+  const errors = {
+    email: !form.email.trim() ? 'Email is required'
+      : !emailRe.test(form.email) ? 'Enter a valid email address' : '',
+    password: !form.password ? 'Password is required'
+      : form.password.length < 6 ? 'Password must be at least 6 characters' : '',
+  }
+
+  const isValid = !errors.email && !errors.password
+
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
-    setError('')
+    setForm(p => ({ ...p, [e.target.name]: e.target.value }))
+    setServerErr('')
   }
 
-  const validate = () => {
-    const errs = {}
-    if (!form.email.trim()) errs.email = 'Email is required'
-    else if (!validateEmail(form.email)) errs.email = 'Invalid email format'
-    if (!form.password) errs.password = 'Password is required'
-    else if (form.password.length < 6) errs.password = 'Password must be at least 6 characters'
-    return errs
-  }
+  const handleBlur = (e) => setTouched(p => ({ ...p, [e.target.name]: true }))
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length) {
-      setErrors(errs)
-      return
-    }
+    setTouched({ email: true, password: true })
+    if (!isValid) return
+
+    setLoading(true)
+    // Simulate network delay
+    await new Promise(r => setTimeout(r, 400))
     const result = login(form.email, form.password)
+    setLoading(false)
+
     if (result.success) {
-      navigate('/dashboard')
+      navigate(location.state?.from || '/dashboard', { replace: true })
     } else {
-      setError('Invalid credentials')
+      setServerErr('Invalid credentials. Try admin@daycare.com / admin123')
     }
   }
 
   return (
     <Box className="auth-page">
       <Container maxWidth="sm">
-        <Card className="auth-card">
-          <CardContent className="auth-card-content">
-            <Box className="auth-header">
-              <Avatar className="auth-avatar" color="primary">
-                <ChildCareIcon fontSize="large" />
-              </Avatar>
-              <Typography variant="h4" fontWeight={700} gutterBottom>Welcome Back</Typography>
-              <Typography variant="body2" color="text.secondary">Sign in to your account</Typography>
-            </Box>
+        <Box className="auth-wrapper">
+          <Box className="auth-logo">
+            <Box className="auth-logo-icon"><ChildCareIcon /></Box>
+            <Typography className="auth-logo-title" color="text.primary">Little Stars</Typography>
+            <Typography className="auth-logo-sub" color="text.secondary">Sign in to your account</Typography>
+          </Box>
 
-            {error && <Alert severity="error" className="error-alert">{error}</Alert>}
+          <Card className="auth-card">
+            <CardContent className="auth-card-body">
+              {serverErr && <Alert severity="error" className="error-alert">{serverErr}</Alert>}
 
-            <Box component="form" onSubmit={handleSubmit} className="auth-form">
-              <TextField
-                fullWidth
-                label="Email Address"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                error={!!errors.email}
-                helperText={errors.email}
-                className="form-field"
-                autoComplete="email"
-              />
-              <TextField
-                fullWidth
-                label="Password"
-                name="password"
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={handleChange}
-                error={!!errors.password}
-                helperText={errors.password}
-                className="form-field-last"
-                autoComplete="current-password"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword(p => !p)} edge="end">
-                        {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Button type="submit" variant="contained" fullWidth size="large" className="submit-button">
-                Sign In
-              </Button>
-              <Box className="auth-footer">
-                <Typography variant="body2" color="text.secondary">
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <TextField
+                  fullWidth label="Email Address" name="email" type="email"
+                  value={form.email} onChange={handleChange} onBlur={handleBlur}
+                  error={touched.email && !!errors.email}
+                  helperText={touched.email ? errors.email : ' '}
+                  className="auth-field"
+                  autoComplete="email"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><EmailIcon fontSize="small" color="action" /></InputAdornment>,
+                  }}
+                />
+                <TextField
+                  fullWidth label="Password" name="password"
+                  type={showPwd ? 'text' : 'password'}
+                  value={form.password} onChange={handleChange} onBlur={handleBlur}
+                  error={touched.password && !!errors.password}
+                  helperText={touched.password ? errors.password : ' '}
+                  className="auth-field-last"
+                  autoComplete="current-password"
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><LockIcon fontSize="small" color="action" /></InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPwd(p => !p)} edge="end" size="small">
+                          {showPwd ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+
+                <Button
+                  type="submit" variant="contained" fullWidth size="large"
+                  className="auth-submit" disabled={!isValid || loading}
+                >
+                  {loading ? 'Signing in...' : 'Sign In'}
+                </Button>
+
+                <Divider sx={{ my: 2 }}>
+                  <Typography variant="caption" color="text.secondary">OR</Typography>
+                </Divider>
+
+                <Typography variant="body2" color="text.secondary" textAlign="center">
                   Don't have an account?{' '}
-                  <Link component={RouterLink} to="/signup" underline="hover" fontWeight={600}>
-                    Sign up
+                  <Link component={RouterLink} to="/signup" fontWeight={600} underline="hover">
+                    Create one
                   </Link>
                 </Typography>
               </Box>
-            </Box>
-          </CardContent>
-        </Card>
-        <Box className="back-link">
-          <Link component={RouterLink} to="/" underline="hover" color="text.secondary">
-            ← Back to Home
-          </Link>
+            </CardContent>
+          </Card>
+
+          <Box className="auth-back">
+            <Link component={RouterLink} to="/" color="text.secondary" underline="hover" fontSize="0.875rem">
+              ← Back to Home
+            </Link>
+          </Box>
         </Box>
       </Container>
     </Box>
