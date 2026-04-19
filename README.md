@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Little Stars — Child Daycare Management System
 
 ## Setup
@@ -83,3 +84,7 @@ Then open http://localhost:5173
 
 ## Test Credentials
 Use any email/password to login (simulated auth)
+=======
+# Child-s-Day-Care-Management-System
+Full Child Day Care Management System built with React.js, Material UI, SCSS, React Router, and Recharts. Includes authentication, attendance tracking, dashboards, and parent portal.
+>>>>>>> da02d92a6d952c7759eb5e7909cd1041e96def1f
