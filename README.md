@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # 🏫 Little Stars — Child Day Care Management System
 
 > A complete, production-ready frontend application for managing daycare operations built with React.js, SCSS, Material UI, React Router, and Recharts.
